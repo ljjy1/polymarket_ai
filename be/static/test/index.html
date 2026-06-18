@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Polymarket AI - MetaMask 登录测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js">
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 720px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: #8888aa;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #1a1a3e;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid #2a2a5e;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ccccee;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #2a2a5e;
+            color: #8888aa;
+        }
+
+        .badge.connected {
+            background: #1a5a2a;
+            color: #66ee88;
+        }
+
+        .badge.active {
+            background: #1a3a5a;
+            color: #66aaee;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #4466ee;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5577ff;
+        }
+
+        .btn-success {
+            background: #22aa44;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #33cc55;
+        }
+
+        .btn-warning {
+            background: #cc8800;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #eeaa00;
+        }
+
+        .btn-danger {
+            background: #cc3344;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #ee4455;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        .step-grid {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .step-dot {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: #2a2a5e;
+            transition: background 0.3s;
+        }
+
+        .step-dot.done {
+            background: #22aa44;
+        }
+
+        .step-dot.active {
+            background: #4466ee;
+        }
+
+        .step-info {
+            font-size: 13px;
+            color: #aaaacc;
+            margin-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #1a1a3e;
+        }
+
+        .info-row .label {
+            color: #8888aa;
+        }
+
+        .info-row .value {
+            color: #ddd;
+            max-width: 420px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .info-row .value.addr {
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-area {
+            background: #0a0a1e;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-area .log-info {
+            color: #66aaee;
+        }
+
+        .log-area .log-success {
+            color: #66ee88;
+        }
+
+        .log-area .log-error {
+            color: #ee4466;
+        }
+
+        .log-area .log-warn {
+            color: #eeaa00;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* =============== Toast 弹窗 =============== */
+        .toast-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            padding-top: 24px;
+        }
+
+        .toast {
+            background: linear-gradient(135deg, #23234f 0%, #1a1a3e 100%);
+            border: 1px solid rgba(204, 136, 0, 0.5);
+            border-radius: 12px;
+            padding: 14px 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(204, 136, 0, 0.1) inset;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #eee;
+            pointer-events: auto;
+            transform: translateY(-150%);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            max-width: min(90vw, 600px);
+            min-width: 320px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast .toast-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .toast .toast-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .toast .toast-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #ccaaff;
+            letter-spacing: 0.3px;
+        }
+
+        .toast .toast-msg {
+            font-size: 14px;
+            color: #e8e8f0;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .toast .toast-close {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #999;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+            line-height: 1;
+        }
+
+        .toast .toast-close:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .toast .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #cc8800, #ffaa22);
+            border-radius: 0 0 0 12px;
+            width: 100%;
+            transform-origin: left center;
+            animation: toast-progress 3s linear forwards;
+        }
+
+        .toast .toast-progress.paused {
+            animation-play-state: paused;
+        }
+
+        @keyframes toast-progress {
+            from {
+                transform: scaleX(1);
+            }
+
+            to {
+                transform: scaleX(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Toast 弹窗容器 -->
+    <div class="toast-container">
+        <div class="toast" id="toast">
+            <span class="toast-icon">⚠️</span>
+            <div class="toast-body">
+                <span class="toast-title">MetaMask 提示</span>
+                <span class="toast-msg" id="toast-msg">切换账户，请重新连接登录</span>
+            </div>
+            <button class="toast-close" onclick="hideToast()">✕</button>
+            <div class="toast-progress" id="toast-progress"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>🔷 MetaMask 登录测试</h1>
+        <p class="subtitle">Polymarket AI 后端 - 钱包签名认证流程验证</p>
+
+        <!-- 步骤进度 -->
+        <div class="step-grid">
+            <div class="step-dot" id="step1-dot"></div>
+            <div class="step-dot" id="step2-dot"></div>
+            <div class="step-dot" id="step3-dot"></div>
+            <div class="step-dot" id="step4-dot"></div>
+        </div>
+
+        <!-- Step 1: 连接钱包 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">1. 连接 MetaMask 钱包</span>
+                <span class="badge" id="wallet-badge">未连接</span>
+            </div>
+            <div class="step-info">点击按钮连接 MetaMask，获取钱包地址</div>
+            <button class="btn btn-primary" id="btn-connect" onclick="connectWallet()">
+                连接 MetaMask
+            </button>
+            <div class="hidden" id="wallet-info">
+                <div class="info-row">
+                    <span class="label">钱包地址</span>
+                    <span class="value addr" id="display-address">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">链 ID</span>
+                    <span class="value" id="display-chain">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: 获取 Nonce -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">2. 获取签名 Nonce</span>
+                <span class="badge" id="nonce-badge">等待</span>
+            </div>
+            <div class="step-info">从后端获取随机 nonce，用于构造签名消息</div>
+            <button class="btn btn-success" id="btn-nonce" onclick="getNonce()" disabled>
+                获取 Nonce
+            </button>
+            <div class="hidden" id="nonce-info">
+                <div class="info-row">
+                    <span class="label">Nonce</span>
+                    <span class="value" id="display-nonce">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">签名消息</span>
+                    <span class="value" id="display-message">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: 签名并登录 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">3. MetaMask 签名 &amp; 登录</span>
+                <span class="badge" id="login-badge">等待</span>
+            </div>
+            <div class="step-info">用 MetaMask 签名消息，然后登录获取 JWT</div>
+            <div>
+                <button class="btn btn-warning" id="btn-sign" onclick="signAndLogin()" disabled>
+                    签名并登录
+                </button>
+                <button class="btn btn-sm" style="background:#883344;color:#fff;margin-left:8px" onclick="resetAll()"
+                    id="btn-logout">
+                    退出登录
+                </button>
+            </div>
+            <div class="hidden" id="token-info">
+                <div class="info-row">
+                    <span class="label">JWT Token</span>
+                    <span class="value" id="display-token">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">过期时间</span>
+                    <span class="value" id="display-expire">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: 测试受保护 API -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">4. 测试受保护 API</span>
+                <span class="badge" id="api-badge">等待</span>
+            </div>
+            <div class="step-info">使用 JWT 调用需要鉴权的接口</div>
+            <button class="btn btn-danger" id="btn-api" onclick="testProtectedAPI()" disabled>
+                测试 API
+            </button>
+            <div class="hidden" id="api-result">
+                <div class="info-row">
+                    <span class="label">状态</span>
+                    <span class="value" id="display-api-status">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">响应</span>
+                    <span class="value" id="display-api-data">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">运行日志</span>
+                <span>
+                    <button class="btn btn-sm" style="background:#333;color:#aaa" onclick="clearLog()">清空</button>
+                </span>
+            </div>
+            <div class="log-area" id="log-area">[系统] 页面已加载，请连接 MetaMask 开始测试\n</div>
+        </div>
+    </div>
+
+    <script>
+        // =============== 配置 ===============
+        const API_BASE = '/api/v1';
+
+        // =============== 状态（localStorage 持久化） ===============
+        const STORAGE_KEYS = {
+            ADDRESS: 'auth_address',
+            CHAIN_ID: 'auth_chainId',
+            TOKEN: 'auth_token',
+            TOKEN_EXPIRE_AT: 'auth_token_expire_at',
+        };
+
+        let state = {
+            provider: null,
+            signer: null,
+            address: localStorage.getItem(STORAGE_KEYS.ADDRESS) || null,
+            chainId: localStorage.getItem(STORAGE_KEYS.CHAIN_ID) || null,
+            nonce: null,
+            message: null,
+            token: localStorage.getItem(STORAGE_KEYS.TOKEN) || null,
+            tokenExpireAt: localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRE_AT) || null,
+        };
+
+        function saveState() {
+            if (state.address) localStorage.setItem(STORAGE_KEYS.ADDRESS, state.address);
+            if (state.chainId) localStorage.setItem(STORAGE_KEYS.CHAIN_ID, String(state.chainId));
+            if (state.token) localStorage.setItem(STORAGE_KEYS.TOKEN, state.token);
+            if (state.tokenExpireAt) localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRE_AT, String(state.tokenExpireAt));
+        }
+
+        function clearState() {
+            Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+            state = { provider: null, signer: null, address: null, chainId: null, nonce: null, message: null, token: null, tokenExpireAt: null };
+        }
+
+        // =============== DOM 工具 ===============
+        const $ = id => document.getElementById(id);
+
+        function log(type, msg) {
+            const area = $('log-area');
+            const colors = { info: '#66aaee', success: '#66ee88', error: '#ee4466', warn: '#eeaa00' };
+            area.innerHTML += `<span style="color:${colors[type] || '#888'}">[${type.toUpperCase()}] ${new Date().toLocaleTimeString()} - ${msg}</span>\n`;
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function clearLog() {
+            $('log-area').innerHTML = '';
+        }
+
+        function updateStep(step) {
+            for (let i = 1; i <= 4; i++) {
+                const dot = $('step' + i + '-dot');
+                dot.className = 'step-dot';
+                if (i < step) dot.classList.add('done');
+                else if (i === step) dot.classList.add('active');
+            }
+        }
+
+        // =============== Step 1: 连接钱包 ===============
+        async function connectWallet() {
+            if (!window.ethereum) {
+                const hint = location.protocol === 'file:'
+                    ? '当前为 file:// 协议，MetaMask 无法注入。请改用 HTTP 服务器访问（如 python3 -m http.server 3000）'
+                    : '请先安装 MetaMask 浏览器插件！';
+                log('error', hint);
+                alert(hint);
+                return;
+            }
+
+            try {
+                log('info', '正在连接 MetaMask...');
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const accounts = await provider.send('eth_requestAccounts', []);
+                const signer = await provider.getSigner();
+                const address = await signer.getAddress();
+                const network = await provider.getNetwork();
+                const chainId = Number(network.chainId);
+
+                state.provider = provider;
+                state.signer = signer;
+                state.address = address;
+                state.chainId = chainId;
+                saveState();
+
+                // UI
+                const badge = $('wallet-badge');
+                badge.textContent = '已连接';
+                badge.className = 'badge connected';
+
+                $('wallet-info').classList.remove('hidden');
+                $('display-address').textContent = address;
+                $('display-chain').textContent = chainId;
+                $('btn-connect').textContent = '✅ 已连接';
+                $('btn-connect').disabled = true;
+                $('btn-nonce').disabled = false;
+
+                log('success', `钱包已连接: ${address.slice(0, 6)}...${address.slice(-4)} (链: ${chainId})`);
+                updateStep(1);
+            } catch (err) {
+                log('error', `连接失败: ${err.message}`);
+            }
+        }
+
+        // =============== Step 2: 获取 Nonce ===============
+        async function getNonce() {
+            if (!state.address) return;
+
+            try {
+                log('info', `正在获取 nonce...`);
+                $('btn-nonce').disabled = true;
+                $('btn-nonce').textContent = '请求中...';
+
+                const resp = await fetch(`${API_BASE}/auth/nonce`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: state.address }),
+                });
+
+                const result = await resp.json();
+
+                if (result.code !== 0) {
+                    log('error', `获取 nonce 失败: ${result.msg}`);
+                    $('btn-nonce').disabled = false;
+                    $('btn-nonce').textContent = '重新获取';
+                    return;
+                }
+
+                state.nonce = result.data.nonce;
+                state.message = result.data.message;
+
+                const badge = $('nonce-badge');
+                badge.textContent = '已获取';
+                badge.className = 'badge active';
+
+                $('nonce-info').classList.remove('hidden');
+                $('display-nonce').textContent = state.nonce;
+                $('display-message').textContent = state.message;
+                $('btn-nonce').textContent = '✅ 已获取';
+                $('btn-sign').disabled = false;
+
+                log('success', `Nonce 获取成功 (过期: ${result.data.expireIn}s)`);
+                updateStep(2);
+            } catch (err) {
+                log('error', `请求异常: ${err.message}`);
+                $('btn-nonce').disabled = false;
+                $('btn-nonce').textContent = '重新获取';
+            }
+        }
+
+        // =============== Step 3: 签名并登录 ===============
+        async function signAndLogin() {
+            if (!state.signer || !state.message) return;
+
+            try {
+                log('info', 'MetaMask 将弹出签名窗口，请确认...');
+                $('btn-sign').disabled = true;
+                $('btn-sign').textContent = '签名中...';
+
+                // 用 MetaMask 签名
+                const signature = await state.signer.signMessage(state.message);
+                log('success', `签名完成: ${signature.slice(0, 10)}...${signature.slice(-6)}`);
+
+                // 调登录接口
+                log('info', '正在验证签名并获取 JWT...');
+                const resp = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: state.address,
+                        signature: signature,
+                    }),
+                });
+
+                const result = await resp.json();
+
+                if (result.code !== 0) {
+                    log('error', `登录失败: ${result.msg}`);
+                    $('btn-sign').disabled = false;
+                    $('btn-sign').textContent = '重试';
+                    return;
+                }
+
+                state.token = result.data.token;
+                state.tokenExpireAt = Date.now() + result.data.expireIn * 1000;
+                saveState();
+
+                const badge = $('login-badge');
+                badge.textContent = '已登录';
+                badge.className = 'badge connected';
+
+                $('token-info').classList.remove('hidden');
+                $('display-token').textContent = state.token.slice(0, 30) + '...';
+                $('display-expire').textContent = Math.floor(result.data.expireIn / 3600) + ' 小时';
+                $('btn-sign').textContent = '✅ 登录成功';
+                $('btn-api').disabled = false;
+
+                log('success', `JWT 获取成功，有效期 ${Math.floor(result.data.expireIn / 3600)} 小时`);
+                updateStep(3);
+            } catch (err) {
+                log('error', `签名/登录异常: ${err.message}`);
+                $('btn-sign').disabled = false;
+                $('btn-sign').textContent = '重试';
+            }
+        }
+
+        // =============== Step 4: 测试受保护 API ===============
+        async function testProtectedAPI() {
+            if (!state.token) return;
+
+            try {
+                log('info', '正在调用受保护 API: POST /api/v1/markets/list');
+                $('btn-api').disabled = true;
+                $('btn-api').textContent = '请求中...';
+
+                const resp = await fetch(`${API_BASE}/markets/list`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`,
+                    },
+                    body: JSON.stringify({
+                        page: 0,
+                        limit: 5,
+                        columns: [],
+                    }),
+                });
+
+                const result = await resp.json();
+
+                const badge = $('api-badge');
+                badge.textContent = '已完成';
+                badge.className = 'badge connected';
+
+                $('api-result').classList.remove('hidden');
+                $('display-api-status').textContent = `HTTP ${resp.status} | code: ${result.code}`;
+                $('display-api-data').textContent = JSON.stringify(result, null, 2);
+
+                if (resp.ok && result.code === 0) {
+                    log('success', `API 调用成功! 返回 ${result.data?.total || 0} 条数据`);
+                } else {
+                    badge.className = 'badge';
+                    log('error', `API 返回错误: ${result.msg}`);
+                }
+
+                $('btn-api').disabled = false;
+                $('btn-api').textContent = '再次测试';
+                updateStep(4);
+            } catch (err) {
+                log('error', `API 请求异常: ${err.message}`);
+                $('btn-api').disabled = false;
+                $('btn-api').textContent = '重试';
+            }
+        }
+
+        // =============== 重置 ===============
+        function resetAll() {
+            clearState();
+
+            ['wallet', 'nonce', 'login', 'api'].forEach(id => {
+                const badge = $(`${id}-badge`);
+                if (badge) { badge.textContent = '等待'; badge.className = 'badge'; }
+            });
+
+            ['wallet-info', 'nonce-info', 'token-info', 'api-result'].forEach(id => {
+                const el = $(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            $('btn-connect').textContent = '连接 MetaMask';
+            $('btn-connect').disabled = false;
+            $('btn-nonce').textContent = '获取 Nonce';
+            $('btn-nonce').disabled = true;
+            $('btn-sign').textContent = '签名并登录';
+            $('btn-sign').disabled = true;
+            $('btn-api').textContent = '测试 API';
+            $('btn-api').disabled = true;
+
+            updateStep(0);
+        }
+
+        // =============== 页面加载时恢复登录状态 ===============
+        function initPage() {
+            // 注册 MetaMask 事件监听（无论是否有保存的状态都要注册）
+            if (window.ethereum) {
+                // 监听账户切换
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        showToast('钱包已断开连接，请重新连接', 3000, 'disconnect');
+                        log('warn', '钱包已断开连接');
+                        resetAll();
+                    } else {
+                        const newAddr = accounts[0].toLowerCase();
+                        const oldAddr = (state.address || '').toLowerCase();
+                        if (newAddr !== oldAddr) {
+                            showToast(`切换账户 (${oldAddr.slice(0, 6)}... → ${newAddr.slice(0, 6)}...)，请重新连接登录`, 3000, 'account');
+                            log('warn', `钱包账户已切换 (${oldAddr.slice(0, 6)}... → ${newAddr.slice(0, 6)}...)，已清除登录状态`);
+                            resetAll();
+                        }
+                    }
+                });
+
+                // 监听网络切换
+                window.ethereum.on('chainChanged', (_chainId) => {
+                    showToast('网络已切换，请重新连接钱包', 3000, 'network');
+                    log('warn', '网络已切换，请重新连接钱包');
+                    resetAll();
+                });
+            }
+
+            // 恢复已保存的登录状态
+            if (state.token && state.address) {
+                // 从 localStorage 恢复后，主动向 MetaMask 验证当前账户是否一致
+                verifyMetaMaskAccount().then((currentAddr) => {
+                    if (currentAddr && currentAddr.toLowerCase() !== state.address.toLowerCase()) {
+                        log('warn', `MetaMask 当前账户与保存的不一致 (${currentAddr.slice(0, 6)}... ≠ ${state.address.slice(0, 6)}...)，已清除`);
+                        clearState();
+                        return;
+                    }
+
+                    // 验证通过，检查 token 是否过期
+                    const now = Date.now();
+                    if (state.tokenExpireAt && now < Number(state.tokenExpireAt)) {
+                        log('info', `检测到已保存的登录状态，钱包地址: ${state.address.slice(0, 6)}...${state.address.slice(-4)}`);
+                        restoreLoggedInUI();
+                    } else {
+                        log('warn', '已保存的 token 已过期，请重新登录');
+                        clearState();
+                    }
+                }).catch(() => {
+                    // 查询失败（如 MetaMask 未解锁），直接按过期处理
+                    log('warn', '无法验证 MetaMask 账户，已清除登录状态');
+                    clearState();
+                });
+            }
+        }
+
+        /** 主动查询 MetaMask 当前选中的账户地址，返回 null 表示未获取到 */
+        async function verifyMetaMaskAccount() {
+            if (!window.ethereum) return null;
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                return accounts && accounts.length > 0 ? accounts[0] : null;
+            } catch {
+                return null;
+            }
+        }
+
+        // =============== Toast 弹窗 ===============
+        let toastTimer = null;
+
+        function showToast(msg, duration = 3000, type) {
+            const el = $('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const titleEl = document.querySelector('#toast .toast-title');
+            const iconEl = document.querySelector('#toast .toast-icon');
+            const progress = document.getElementById('toast-progress');
+
+            // 设置标题和图标
+            const typeMap = {
+                account: { title: '账户切换', icon: '🔄' },
+                disconnect: { title: '连接断开', icon: '🔌' },
+                network: { title: '网络切换', icon: '🌐' },
+            };
+            const cfg = typeMap[type] || { title: 'MetaMask 提示', icon: '⚠️' };
+            if (titleEl) titleEl.textContent = cfg.title;
+            if (iconEl) iconEl.textContent = cfg.icon;
+
+            if (msgEl) msgEl.textContent = msg;
+            // 重置进度条动画
+            if (progress) {
+                progress.style.animation = 'none';
+                progress.offsetHeight; // 强制回流
+                progress.style.animation = `toast-progress ${duration}ms linear forwards`;
+            }
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(hideToast, duration);
+        }
+
+        function hideToast() {
+            const el = $('toast');
+            const progress = document.getElementById('toast-progress');
+            if (progress) progress.style.animationPlayState = 'paused';
+            el.classList.remove('show');
+            clearTimeout(toastTimer);
+        }
+
+        function restoreLoggedInUI() {
+            // Step 1: 显示钱包地址
+            const badge = $('wallet-badge');
+            badge.textContent = '已连接';
+            badge.className = 'badge connected';
+            $('wallet-info').classList.remove('hidden');
+            $('display-address').textContent = state.address;
+            $('display-chain').textContent = state.chainId || '-';
+            $('btn-connect').textContent = '✅ 已连接';
+            $('btn-connect').disabled = true;
+            $('btn-nonce').disabled = false;
+
+            // Step 3: 显示 Token
+            const loginBadge = $('login-badge');
+            loginBadge.textContent = '已登录';
+            loginBadge.className = 'badge connected';
+            $('token-info').classList.remove('hidden');
+            $('display-token').textContent = state.token.slice(0, 30) + '...';
+            $('display-expire').textContent = state.tokenExpireAt
+                ? Math.floor((Number(state.tokenExpireAt) - Date.now()) / 3600000) + ' 小时'
+                : '-';
+            $('btn-sign').textContent = '✅ 登录成功';
+            $('btn-sign').disabled = true;
+            $('btn-api').disabled = false;
+
+            updateStep(3);
+        }
+
+        // 页面加载时恢复状态
+        initPage();
+    </script>
+
+</body>
+
+</html>
