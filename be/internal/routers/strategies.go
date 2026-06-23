@@ -28,4 +28,7 @@ func strategiesRouter(group *gin.RouterGroup, h handler.StrategiesHandler) {
 	g.PUT("/:id", h.UpdateByID)    // [put] /api/v1/strategies/:id
 	g.GET("/:id", h.GetByID)       // [get] /api/v1/strategies/:id
 	g.POST("/list", h.List)        // [post] /api/v1/strategies/list
+
+	// 新增自定义路由
+	g.GET("/active", h.GetActive) // GET /api/v1/strategies/active
 }

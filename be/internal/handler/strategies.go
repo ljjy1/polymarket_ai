@@ -9,6 +9,7 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 	"github.com/go-dev-frame/sponge/pkg/gin/response"
 	"github.com/go-dev-frame/sponge/pkg/logger"
+	"github.com/go-dev-frame/sponge/pkg/sgorm/query"
 	"github.com/go-dev-frame/sponge/pkg/utils"
 
 	"be/internal/cache"
@@ -28,6 +29,8 @@ type StrategiesHandler interface {
 	UpdateByID(c *gin.Context)
 	GetByID(c *gin.Context)
 	List(c *gin.Context)
+	// 新增
+	GetActive(c *gin.Context)
 }
 
 type strategiesHandler struct {
@@ -233,6 +236,36 @@ func (h *strategiesHandler) List(c *gin.Context) {
 	response.Success(c, gin.H{
 		"strategiess": data,
 		"total":       total,
+	})
+}
+
+// GetActive 获取所有活跃策略
+func (h *strategiesHandler) GetActive(c *gin.Context) {
+	ctx := middleware.WrapCtx(c)
+
+	strategiess, total, err := h.iDao.GetByColumns(ctx, &query.Params{
+		Page: 1,
+		Size: 100,
+		Sort: "id DESC",
+		Columns: []query.Column{
+			{Name: "status", Exp: "=", Value: "active"},
+		},
+	})
+	if err != nil {
+		logger.Error("GetActive error", logger.Err(err), middleware.GCtxRequestIDField(c))
+		response.Output(c, ecode.InternalServerError.ToHTTPCode())
+		return
+	}
+
+	data, err := convertStrategiess(strategiess)
+	if err != nil {
+		response.Error(c, ecode.ErrListStrategies)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"strategies": data,
+		"total":      total,
 	})
 }
 

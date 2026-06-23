@@ -34,9 +34,9 @@ spec:
             - name: host-timezone
               mountPath: /etc/localtime
               readOnly: true
-          #env:
-          #  - name: TZ
-          #    value: "Asia/Shanghai"
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
           
           ports:
             - name: http-port

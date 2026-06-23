@@ -28,4 +28,8 @@ func marketsRouter(group *gin.RouterGroup, h handler.MarketsHandler) {
 	g.PUT("/:id", h.UpdateByID)    // [put] /api/v1/markets/:id
 	g.GET("/:id", h.GetByID)       // [get] /api/v1/markets/:id
 	g.POST("/list", h.List)        // [post] /api/v1/markets/list
+
+	// 新增自定义路由
+	g.GET("/today", h.GetToday)    // GET /api/v1/markets/today
+	g.POST("/scan", h.TriggerScan) // POST /api/v1/markets/scan
 }

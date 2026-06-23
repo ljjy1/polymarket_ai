@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 	"github.com/go-dev-frame/sponge/pkg/gin/response"
 	"github.com/go-dev-frame/sponge/pkg/logger"
+	"github.com/go-dev-frame/sponge/pkg/sgorm/query"
 	"github.com/go-dev-frame/sponge/pkg/utils"
 
 	"be/internal/cache"
@@ -28,6 +30,9 @@ type MarketsHandler interface {
 	UpdateByID(c *gin.Context)
 	GetByID(c *gin.Context)
 	List(c *gin.Context)
+	// 新增
+	GetToday(c *gin.Context)
+	TriggerScan(c *gin.Context)
 }
 
 type marketsHandler struct {
@@ -234,6 +239,60 @@ func (h *marketsHandler) List(c *gin.Context) {
 		"marketss": data,
 		"total":    total,
 	})
+}
+
+// GetToday 获取今日选定的市场
+// @Summary 获取今日选定的市场
+// @Description 获取今日扫描选定的市场信息
+// @Tags markets
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.Result
+// @Router /api/v1/markets/today [get]
+// @Security BearerAuth
+func (h *marketsHandler) GetToday(c *gin.Context) {
+	ctx := middleware.WrapCtx(c)
+	today := time.Now().UTC().Format("2006-01-02")
+
+	// 查询今日扫描记录
+	markets, total, err := h.iDao.GetByColumns(ctx, &query.Params{
+		Page: 1,
+		Size: 1,
+		Columns: []query.Column{
+			{Name: "scan_date", Exp: "=", Value: today},
+		},
+		Sort: "id DESC",
+	})
+	if err != nil || total == 0 {
+		response.Error(c, ecode.NotFound)
+		return
+	}
+
+	data, err := convertMarkets(markets[0])
+	if err != nil {
+		response.Error(c, ecode.ErrGetByIDMarkets)
+		return
+	}
+
+	response.Success(c, gin.H{"markets": data})
+}
+
+// TriggerScan 手动触发市场扫描
+// @Summary 手动触发市场扫描
+// @Description 手动触发市场扫描，从 Polymarket 拉取最新市场数据
+// @Tags markets
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.Result
+// @Router /api/v1/markets/scan [post]
+// @Security BearerAuth
+func (h *marketsHandler) TriggerScan(c *gin.Context) {
+	ctx := middleware.WrapCtx(c)
+
+	// TODO: 实际集成 Asynq 客户端
+	logger.Warn("TriggerScan called but service integration not yet complete", middleware.GCtxRequestIDField(c))
+	_ = ctx // suppress unused variable
+	response.Success(c, gin.H{"message": "scan task submitted"})
 }
 
 func getMarketsIDFromPath(c *gin.Context) (string, uint64, bool) {

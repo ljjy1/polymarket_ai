@@ -1,15 +1,28 @@
 /**
  * 本地部署脚本
  *
- * 仅允许在本地网络（hardhatMainnet / hardhatOp / localhost）上部署。
+ * 支持两种部署模式：
+ *   模式 A — EDR 内嵌节点（hardhatMainnet / hardhatOp），Hardhat 自动启动临时节点
+ *   模式 B — 外部已启动节点（localhost），需先手动启动节点再运行此脚本
+ *
  * 部署流程：
  *   1. 初始化运行时，检查网络环境，非本地网络直接报错退出
  *   2. 部署 MockUSDC（本地测试用 USDC）
  *   3. 通过 UUPS 代理部署 PolyVault 并执行 initialize
  *   4. 将部署信息写入 deployments/<network.name>.json
  *
- * 使用:  npx hardhat run scripts/deploy-local.ts --network <network>
- *       支持的 network: hardhatMainnet, hardhatOp, localhost
+ * 使用:
+ *   # 模式 A：EDR 内嵌节点
+ *   npx hardhat run scripts/deploy-local.ts --network hardhatMainnet
+ *
+ *   # 模式 B：连接已运行的本地节点
+ *   # 终端 1：npx hardhat node（或 anvil，anvil --code-size-limit 30000）
+ *   # 终端 2：
+ *   npx hardhat run scripts/deploy-local.ts --network localhost
+ *   # 或自定义 RPC 地址：
+ *   LOCAL_RPC_URL=http://127.0.0.1:8545 npx hardhat run scripts/deploy-local.ts --network localhost
+ *
+ *   支持的 network: hardhatMainnet, hardhatOp, localhost
  */
 
 import hre from "hardhat";
@@ -56,12 +69,26 @@ async function main() {
   }
   console.log(`\n  🌐 网络: ${networkName}（本地环境，继续部署...）\n`);
 
-  // ── 3. 获取签名者 ────────────────────────────────────
+  // ── 3. 连接可用性检查（模式 B：已启动的节点必须可达） ──
+  try {
+    const net = await ethers.provider.getNetwork();
+    const blockNumber = await ethers.provider.getBlockNumber();
+    console.log(`     📡 RPC 可达, 链 ID: ${net.chainId}, 最新区块: ${blockNumber}\n`);
+  } catch (err: any) {
+    console.error(`\n  ❌ 无法连接到 ${networkName} 节点！`);
+    console.error(`     请先在终端 1 中启动本地节点:`);
+    console.error(`       npx hardhat node`);
+    console.error(`     然后在终端 2 中运行部署脚本:\n`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // ── 4. 获取签名者 ────────────────────────────────────
   const signers = await ethers.getSigners();
   const [deployer] = signers;
   console.log(`  🔑 部署账户: ${deployer.address}\n`);
 
-  // ── 4. 部署 MockUSDC ─────────────────────────────────
+  // ── 5. 部署 MockUSDC ─────────────────────────────────
   console.log("  📦 部署 MockUSDC...");
   const MockUSDC = await ethers.getContractFactory("MockUSDC");
   const usdc = await MockUSDC.deploy();
@@ -69,7 +96,7 @@ async function main() {
   const usdcAddress = await usdc.getAddress();
   console.log(`     ✅ MockUSDC: ${usdcAddress}`);
 
-  // ── 5. 部署 PolyVault（UUPS 代理） ──────────────────
+  // ── 6. 部署 PolyVault（UUPS 代理） ──────────────────
   console.log("\n  📦 部署 PolyVault (UUPS 代理)...");
   const PolyVaultFactory = await ethers.getContractFactory("PolyVault");
 
@@ -102,7 +129,7 @@ async function main() {
   console.log(`     ✅ PolyVault Proxy:  ${proxyAddress}`);
   console.log(`     ✅ PolyVault Impl:   ${implAddress}`);
 
-  // ── 6. 保存部署信息到 JSON ──────────────────────────
+  // ── 7. 保存部署信息到 JSON ──────────────────────────
   if (!fs.existsSync(DEPLOYMENTS_DIR)) {
     fs.mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
   }

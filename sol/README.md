@@ -102,6 +102,9 @@ npx hardhat run scripts/deploy-local.ts --network hardhatMainnet
 
 # 部署到本地 Optimism 模拟环境
 npx hardhat run scripts/deploy-local.ts --network hardhatOp
+
+# 部署到已经运行的本地节点
+npx hardhat run scripts/deploy-local.ts --network localhost
 ```
 
 部署完成后，合约地址和参数信息会保存到 `deployments/<network>.json`。

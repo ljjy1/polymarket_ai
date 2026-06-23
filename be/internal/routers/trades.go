@@ -28,4 +28,7 @@ func tradesRouter(group *gin.RouterGroup, h handler.TradesHandler) {
 	g.PUT("/:id", h.UpdateByID)    // [put] /api/v1/trades/:id
 	g.GET("/:id", h.GetByID)       // [get] /api/v1/trades/:id
 	g.POST("/list", h.List)        // [post] /api/v1/trades/list
+
+	// 新增自定义路由
+	g.GET("/active", h.GetActive) // GET /api/v1/trades/active
 }

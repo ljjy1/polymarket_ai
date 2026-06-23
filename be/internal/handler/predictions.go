@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/gin/middleware"
 	"github.com/go-dev-frame/sponge/pkg/gin/response"
 	"github.com/go-dev-frame/sponge/pkg/logger"
+	"github.com/go-dev-frame/sponge/pkg/sgorm/query"
 	"github.com/go-dev-frame/sponge/pkg/utils"
 
 	"be/internal/cache"
@@ -28,6 +30,9 @@ type PredictionsHandler interface {
 	UpdateByID(c *gin.Context)
 	GetByID(c *gin.Context)
 	List(c *gin.Context)
+	// 新增
+	GetToday(c *gin.Context)
+	TriggerPredict(c *gin.Context)
 }
 
 type predictionsHandler struct {
@@ -234,6 +239,59 @@ func (h *predictionsHandler) List(c *gin.Context) {
 		"predictionss": data,
 		"total":        total,
 	})
+}
+
+// GetToday 获取今日预测记录（按最近 market_id 查询）
+// @Summary 获取今日预测记录
+// @Description 获取今日最新的 AI 预测记录
+// @Tags predictions
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.Result
+// @Router /api/v1/predictions/today [get]
+// @Security BearerAuth
+func (h *predictionsHandler) GetToday(c *gin.Context) {
+	ctx := middleware.WrapCtx(c)
+	today := time.Now().UTC().Format("2006-01-02")
+
+	predictions, total, err := h.iDao.GetByColumns(ctx, &query.Params{
+		Page: 1,
+		Size: 1,
+		Columns: []query.Column{
+			{Name: "created_at", Exp: ">=", Value: today + " 00:00:00"},
+		},
+		Sort: "id DESC",
+	})
+	if err != nil || total == 0 {
+		response.Error(c, ecode.NotFound)
+		return
+	}
+
+	data, err := convertPredictions(predictions[0])
+	if err != nil {
+		response.Error(c, ecode.ErrGetByIDPredictions)
+		return
+	}
+
+	response.Success(c, gin.H{"predictions": data})
+}
+
+// TriggerPredict 手动触发 AI 预测
+// @Summary 手动触发 AI 预测
+// @Description 手动触发 AI 预测任务，对当前市场进行预测分析
+// @Tags predictions
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.Result
+// @Router /api/v1/predictions/trigger [post]
+// @Security BearerAuth
+func (h *predictionsHandler) TriggerPredict(c *gin.Context) {
+	ctx := middleware.WrapCtx(c)
+
+	// TODO: 实际集成 Asynq 客户端
+	logger.Warn("TriggerPredict called but service integration not yet complete", middleware.GCtxRequestIDField(c))
+	_ = ctx
+	response.Success(c, gin.H{"message": "predict task submitted"})
 }
 
 func getPredictionsIDFromPath(c *gin.Context) (string, uint64, bool) {

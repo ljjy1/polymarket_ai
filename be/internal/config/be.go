@@ -29,18 +29,29 @@ func Set(conf *Config) {
 }
 
 type Config struct {
-	App        App          `yaml:"app" json:"app"`
-	Consul     Consul       `yaml:"consul" json:"consul"`
-	Database   Database     `yaml:"database" json:"database"`
-	Etcd       Etcd         `yaml:"etcd" json:"etcd"`
-	Grpc       Grpc         `yaml:"grpc" json:"grpc"`
-	GrpcClient []GrpcClient `yaml:"grpcClient" json:"grpcClient"`
-	HTTP       HTTP         `yaml:"http" json:"http"`
-	JWT        JWT          `yaml:"jwt" json:"jwt"`
-	Jaeger     Jaeger       `yaml:"jaeger" json:"jaeger"`
-	Logger     Logger       `yaml:"logger" json:"logger"`
-	NacosRd    NacosRd      `yaml:"nacosRd" json:"nacosRd"`
-	Redis      Redis        `yaml:"redis" json:"redis"`
+	App            App            `yaml:"app" json:"app"`
+	Consul         Consul         `yaml:"consul" json:"consul"`
+	Database       Database       `yaml:"database" json:"database"`
+	Proxy          Proxy          `yaml:"proxy" json:"proxy"`
+	FearGreedIndex FearGreedIndex `yaml:"fearGreedIndex" json:"fearGreedIndex"`
+	DeepSeek       DeepSeek       `yaml:"deepseek" json:"deepseek"`
+	Polymarket     Polymarket     `yaml:"polymarket" json:"polymarket"`
+	Binance        Binance        `yaml:"binance" json:"binance"`
+	GNews          GNews          `yaml:"gnews" json:"gnews"`
+	CryptoQuant    CryptoQuant    `yaml:"cryptoquant" json:"cryptoquant"`
+	Strategy       Strategy       `yaml:"strategy" json:"strategy"`
+	Monitoring     Monitoring     `yaml:"monitoring" json:"monitoring"`
+	Vault          Vault          `yaml:"vault" json:"vault"`
+	Asynq          Asynq          `yaml:"asynq" json:"asynq"`
+	Etcd           Etcd           `yaml:"etcd" json:"etcd"`
+	Grpc           Grpc           `yaml:"grpc" json:"grpc"`
+	GrpcClient     []GrpcClient   `yaml:"grpcClient" json:"grpcClient"`
+	HTTP           HTTP           `yaml:"http" json:"http"`
+	JWT            JWT            `yaml:"jwt" json:"jwt"`
+	Jaeger         Jaeger         `yaml:"jaeger" json:"jaeger"`
+	Logger         Logger         `yaml:"logger" json:"logger"`
+	NacosRd        NacosRd        `yaml:"nacosRd" json:"nacosRd"`
+	Redis          Redis          `yaml:"redis" json:"redis"`
 }
 
 type JWT struct {
@@ -186,4 +197,75 @@ type HTTP struct {
 	Port    int `yaml:"port" json:"port"`
 	Timeout int `yaml:"timeout" json:"timeout"`
 	TLS     TLS `yaml:"tls" json:"tls"`
+}
+
+type DeepSeek struct {
+	APIKey            string `yaml:"apiKey" json:"apiKey"`
+	BaseURL           string `yaml:"baseURL" json:"baseURL"`
+	Model             string `yaml:"model" json:"model"`
+	UseAgentPredictor bool   `yaml:"useAgentPredictor" json:"useAgentPredictor"` // true=使用 DeepAgent 多智能体架构, false=使用传统单模型
+}
+
+type Polymarket struct {
+	ClobAPIURL  string `yaml:"clobApiUrl" json:"clobApiUrl"`
+	GammaAPIURL string `yaml:"gammaApiUrl" json:"gammaApiUrl"`
+	ChainID     int    `yaml:"chainId" json:"chainId"`
+	PrivateKey  string `yaml:"privateKey" json:"privateKey"`
+	APIKey      string `yaml:"apiKey" json:"apiKey"`
+	APISecret   string `yaml:"apiSecret" json:"apiSecret"`
+	Passphrase  string `yaml:"passphrase" json:"passphrase"`
+	WSMarketURL string `yaml:"wsMarketUrl" json:"wsMarketUrl"`
+}
+
+type Binance struct {
+	APIURL string `yaml:"apiUrl" json:"apiUrl"`
+}
+
+type GNews struct {
+	BaseURL string `yaml:"baseUrl" json:"baseUrl"`
+	APIKey  string `yaml:"apiKey" json:"apiKey"`
+}
+
+type CryptoQuant struct {
+	APIKey  string `yaml:"apiKey" json:"apiKey"`
+	BaseURL string `yaml:"baseUrl" json:"baseUrl"`
+}
+
+// Proxy 代理配置（可选）
+type Proxy struct {
+	Addr string `yaml:"addr" json:"addr"` // 代理地址，如 "127.0.0.1:6450"，为空时不使用代理
+}
+
+// FearGreedIndex 恐慌贪婪指数配置
+type FearGreedIndex struct {
+	URL string `yaml:"url" json:"url"`
+}
+
+type Strategy struct {
+	MinEdge              float64 `yaml:"minEdge" json:"minEdge"`
+	MinConfidence        float64 `yaml:"minConfidence" json:"minConfidence"`
+	MaxPositionPct       float64 `yaml:"maxPositionPct" json:"maxPositionPct"`
+	KellyMultiplier      float64 `yaml:"kellyMultiplier" json:"kellyMultiplier"`
+	TakeProfitFactor     float64 `yaml:"takeProfitFactor" json:"takeProfitFactor"`
+	StopLossFactor       float64 `yaml:"stopLossFactor" json:"stopLossFactor"`
+	PreResolutionMinutes int     `yaml:"preResolutionMinutes" json:"preResolutionMinutes"`
+}
+
+type Monitoring struct {
+	PriceCheckInterval  int `yaml:"priceCheckInterval" json:"priceCheckInterval"`
+	AlertPriceChangePct int `yaml:"alertPriceChangePct" json:"alertPriceChangePct"`
+	MaxRetry            int `yaml:"maxRetry" json:"maxRetry"`
+}
+
+type Vault struct {
+	RPCURL               string `yaml:"rpcUrl" json:"rpcUrl"`                             // 链上RPC节点地址
+	ContractAddress      string `yaml:"contractAddress" json:"contractAddress"`           // PolyVault合约地址
+	StrategistPrivateKey string `yaml:"strategistPrivateKey" json:"strategistPrivateKey"` // 策略角色私钥（用于withdrawToStrategy/depositFromStrategy签名）
+}
+
+type Asynq struct {
+	Addr        string `yaml:"addr" json:"addr"`
+	Password    string `yaml:"password" json:"password"`
+	DB          int    `yaml:"db" json:"db"`
+	Concurrency int    `yaml:"concurrency" json:"concurrency"`
 }

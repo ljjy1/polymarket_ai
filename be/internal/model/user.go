@@ -9,10 +9,10 @@ import (
 type User struct {
 	sgorm.Model `gorm:"embedded"` // embed id and time
 
-	WalletAddress string     `gorm:"column:wallet_address;type:varchar(256);uniqueIndex;not null" json:"walletAddress"` // MetaMask 钱包地址
-	Nickname      string     `gorm:"column:nickname;type:varchar(128)" json:"nickname"`                                 // 昵称
-	Avatar        string     `gorm:"column:avatar;type:varchar(512)" json:"avatar"`                                     // 头像 URL
-	LastLoginAt   *time.Time `gorm:"column:last_login_at;type:datetime" json:"lastLoginAt"`                             // 最后登录时间
+	WalletAddress string     `gorm:"column:wallet_address;type:varchar(256);uniqueIndex;not null;comment:MetaMask 钱包地址" json:"walletAddress"`
+	Nickname      string     `gorm:"column:nickname;type:varchar(128);comment:昵称" json:"nickname"`
+	Avatar        string     `gorm:"column:avatar;type:varchar(512);comment:头像 URL" json:"avatar"`
+	LastLoginAt   *time.Time `gorm:"column:last_login_at;type:datetime;comment:最后登录时间" json:"lastLoginAt"`
 }
 
 // TableName 指定表名

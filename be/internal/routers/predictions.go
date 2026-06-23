@@ -28,4 +28,8 @@ func predictionsRouter(group *gin.RouterGroup, h handler.PredictionsHandler) {
 	g.PUT("/:id", h.UpdateByID)    // [put] /api/v1/predictions/:id
 	g.GET("/:id", h.GetByID)       // [get] /api/v1/predictions/:id
 	g.POST("/list", h.List)        // [post] /api/v1/predictions/list
+
+	// 新增自定义路由
+	g.GET("/today", h.GetToday)          // GET /api/v1/predictions/today
+	g.POST("/trigger", h.TriggerPredict) // POST /api/v1/predictions/trigger
 }

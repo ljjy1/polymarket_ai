@@ -58,6 +58,14 @@ func NewAuthHandler() AuthHandler {
 }
 
 // Nonce 生成一个随机 nonce，用于 MetaMask 签名
+// @Summary 获取签名 nonce
+// @Description 生成一个随机 nonce，前端需在 MetaMask 中对返回的 message 进行签名
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param data body types.NonceRequest true "钱包地址"
+// @Success 200 {object} types.Result{data=types.NonceReply}
+// @Router /api/v1/auth/nonce [post]
 func (h *authHandler) Nonce(c *gin.Context) {
 	form := &types.NonceRequest{}
 	if err := c.ShouldBindJSON(form); err != nil {
@@ -101,6 +109,14 @@ func (h *authHandler) Nonce(c *gin.Context) {
 }
 
 // Login 验证 MetaMask 签名并返回 JWT token
+// @Summary MetaMask 签名登录
+// @Description 验证 MetaMask 签名，验证通过后返回 JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param data body types.LoginRequest true "地址和签名"
+// @Success 200 {object} types.Result{data=types.LoginReply}
+// @Router /api/v1/auth/login [post]
 func (h *authHandler) Login(c *gin.Context) {
 	form := &types.LoginRequest{}
 	if err := c.ShouldBindJSON(form); err != nil {
